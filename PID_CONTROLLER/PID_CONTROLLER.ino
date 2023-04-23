@@ -1,4 +1,4 @@
-float Rpm[8],Rpm2[8],TachoTimer[8],TachoValue[8],OldTachoValue[8],Rpm1[8],ControlValue[12],ProcessValue[12],SetPoint[12],P[12],I[12],D[12],MaxSummativeError[12],Error[12],LastError[12],ErrorSummative[12],PreviousTime[12],DeltaTime[12],Proportional,Integral,Derivative;
+float Speed[8],PotVal[8],Rpm[8],Rpm2[8],Rpm3[8],TachoTimer[8],TachoValue[8],OldTachoValue[8],Rpm1[8],ControlValue[12],ProcessValue[12],SetPoint[12],P[12],I[12],D[12],MaxSummativeError[12],Error[12],LastError[12],ErrorSummative[12],PreviousTime[12],DeltaTime[12],Proportional,Integral,Derivative;
 
 void PID(int Idx){
   Error[Idx] = SetPoint[Idx] - ProcessValue[Idx];
@@ -19,19 +19,28 @@ void PID(int Idx){
 }
 
 void ReadRpm(int Idx){
-  TachoValue[Idx] = digitalRead(Idx+20);
+  TachoValue[Idx] = digitalRead(Idx+30);
   //Serial.println(TachoValue[Idx]);
 if(TachoValue[Idx] != OldTachoValue[Idx]){
-  Rpm1[Idx] = 6000000/((micros()-TachoTimer[Idx])/1.5);
-  Rpm[Idx] = Rpm1[Idx]*0.5+Rpm2[Idx]*0.5;
+  Rpm1[Idx] = micros()-TachoTimer[Idx];
+  Rpm3[Idx] = (1.0/(((Rpm1[Idx]*0.5+Rpm2[Idx]*0.5)/6000000.0)));
+  Rpm[Idx] = 0.00021299060075323*pow(Rpm[Idx],2.0)+0.74515357139003*Rpm[Idx]+96.860745896597;
   TachoTimer[Idx] = micros();
-  Serial.println(Rpm[Idx]+100);
   Rpm2[Idx] = Rpm1[Idx];
+  Serial.println(Rpm[Idx]);
   }
   OldTachoValue[Idx] = TachoValue[Idx];
 }
 
+void ReadPot(int Pin,int Idx){
+  PotVal[Idx] = PotVal[Idx]*0.99+0.01*((((analogRead(Pin)/512.0)-1.0)));
+  //Serial.println(PotVal[Idx]);
+}
 
+void SpeedCalc(int Idx){
+  Speed[Idx] = (PotVal[Idx]*92.5)+157.5;
+  //Serial.println(Speed[Idx]);
+}
 
 void setup() {
   // put your setup code here, to run once:
@@ -40,6 +49,8 @@ void setup() {
 
 void loop() {
   ReadRpm(0);
-  analogWrite(2, 160+30);
+  ReadPot(A0,0);
+  SpeedCalc(0);
+  analogWrite(2, Speed[0]);
 
 }
