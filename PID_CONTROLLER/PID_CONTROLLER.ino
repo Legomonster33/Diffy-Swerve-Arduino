@@ -3,6 +3,8 @@ MicrosPerRevolution[12],
 MotorOutPut[12],
 PotVal[12],
 Rpm[12],
+Rpm1[12],
+Rpm2[12],
 TachoDeltaTimePrevious[12],
 MicrosPerPulse[12],
 TachoTimer[12],
@@ -41,7 +43,7 @@ void PID(int Idx){
 
   Derivative = ((D[Idx]/DeltaTime[Idx])/(Error[Idx]-LastError[Idx]));
 
-  ControlValue[Idx] = -1.0*(Proportional + Integral + Derivative);
+  ControlValue[Idx] = 1.0*(Proportional + Integral + Derivative);
   if(ControlValue[Idx]>MaxControl[Idx]){ControlValue[Idx]=MaxControl[Idx];}
   if(ControlValue[Idx]<-1.0*MaxControl[Idx]){ControlValue[Idx]=-1.0*MaxControl[Idx];}
 }
@@ -63,9 +65,14 @@ if(TachoValue[Idx] != OldTachoValue[Idx]){
   MicrosPerRevolution[Idx] = AvgMicrosPerPulse[Idx]*PulsesPerRevolution;
   //micros per rotation
 
-  Rpm[Idx] = MicrosecondsPerMinute/MicrosPerRevolution[Idx];
+  Rpm1[Idx] = MicrosecondsPerMinute/MicrosPerRevolution[Idx];
   // divide how many microseconds per minute by how many microseconds per revo to get rotations per minute
-      
+
+  Rpm[Idx] = Rpm1[Idx]*0.5+Rpm2[Idx]*0.5;
+  //average last and current rpm
+  
+  Rpm2[Idx] = Rpm1[Idx] ;
+       
   TachoTimer[Idx] = micros();
   TachoDeltaTimePrevious[Idx] = TachoDeltaTime[Idx];
   }
@@ -77,9 +84,9 @@ void ReadPot(int Pin,int Idx){
 }
 
 void MotorOutPutCalc(int Idx){
-  MotorOutPut[Idx] = MotorOutPut[Idx] + MotorOutPut[Idx]*ControlValue[Idx];
-  if(MotorOutPut[Idx]>250){MotorOutPut[Idx]=250.0;Serial.print("maxxed");}
-  if(MotorOutPut[Idx]<70){MotorOutPut[Idx]=70.0;Serial.print("minned");} 
+  MotorOutPut[Idx] = MotorOutPut[Idx] - MotorOutPut[Idx]*ControlValue[Idx];
+  if(MotorOutPut[Idx]>250){MotorOutPut[Idx]=250.0;}
+  if(MotorOutPut[Idx]<70){MotorOutPut[Idx]=70.0;} 
 }
 
 void PotRead(int PinNum,int Idx){
@@ -115,7 +122,7 @@ void PrintAll(int Idx){
   Serial.print("\t");
 
   Serial.print("TargetRpm_: ");
-  Serial.print(ProcessValue[Idx]*5000.0);
+  Serial.print(SetPoint[Idx]*5000.0);
   Serial.print("\t");  
 
   Serial.println();
@@ -126,11 +133,11 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(1000000);
   MotorOutPut[0]=160;
-  P[0]=0.01;
+  P[0]=0.1;
   I[0]=0.0;
   D[0]=0.0;
-  MaxSummativeError[0] = 1;
-  MaxControl[0]=1;
+  MaxSummativeError[0] = 1.0;
+  MaxControl[0]=1.0;
   
 }
 
@@ -140,6 +147,7 @@ void loop() {
   MotorOutPutCalc(0);
   PotRead(A0,0);
   analogWrite(2, MotorOutPut[0]);
+  //analogWrite(2, 200);
   ProcessValue[0] = Rpm[0]/5000.0;
   SetPoint[0]=PotVal[0];
   PID(0);
