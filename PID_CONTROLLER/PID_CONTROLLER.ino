@@ -1,4 +1,30 @@
-float AvgMicrosPerPulse[8],MicrosPerRevolution[8],Speed[8],PotVal[8],Rpm[8],TachoDeltaTimePrevious[8],MicrosPerPulse[8],TachoTimer[8],TachoValue[8],OldTachoValue[8],TachoDeltaTime[8],ControlValue[12],ProcessValue[12],SetPoint[12],P[12],I[12],D[12],MaxSummativeError[12],Error[12],LastError[12],ErrorSummative[12],PreviousTime[12],DeltaTime[12],Proportional,Integral,Derivative;
+float AvgMicrosPerPulse[8],
+MicrosPerRevolution[8],
+MotorOutPut[8],
+PotVal[8],
+Rpm[8],
+TachoDeltaTimePrevious[8],
+MicrosPerPulse[8],
+TachoTimer[8],
+TachoValue[8],
+OldTachoValue[8],
+TachoDeltaTime[8],
+ControlValue[12],
+ProcessValue[12],
+SetPoint[12],
+P[12],
+I[12],
+D[12],
+MaxSummativeError[12],
+Error[12],
+LastError[12],
+ErrorSummative[12],
+PreviousTime[12],
+DeltaTime[12],
+MaxControl[12],
+Proportional,
+Integral,
+Derivative;
 
 void PID(int Idx){
   Error[Idx] = SetPoint[Idx] - ProcessValue[Idx];
@@ -15,7 +41,8 @@ void PID(int Idx){
   Derivative = ((D[Idx]/DeltaTime[Idx])/(Error[Idx]-LastError[Idx]));
 
   ControlValue[Idx] = Proportional + Integral + Derivative;
-
+  if(ControlValue[Idx]>MaxControl[Idx]){ControlValue[Idx]=MaxControl[Idx];}
+  if(ControlValue[Idx]<-1*MaxControl[Idx]){ControlValue[Idx]=-1*MaxControl[Idx];}
 }
 
 
@@ -40,10 +67,9 @@ if(TachoValue[Idx] != OldTachoValue[Idx]){
       
   TachoTimer[Idx] = micros();
   TachoDeltaTimePrevious[Idx] = TachoDeltaTime[Idx];
-  Serial.println(Rpm[Idx]);
+  //Serial.println(Rpm[Idx]);
   }
   OldTachoValue[Idx] = TachoValue[Idx];
-  if(TachoTimer[Idx]<micros()-500000){TachoTimer[Idx]=micros();}
 }
 
 void ReadPot(int Pin,int Idx){
@@ -51,20 +77,37 @@ void ReadPot(int Pin,int Idx){
   //Serial.println(PotVal[Idx]);
 }
 
-void SpeedCalc(int Idx){
-  Speed[Idx] = (PotVal[Idx]*92.5)+157.5;
-  //Serial.println(Speed[Idx]);
+void MotorOutPutCalc(int Idx){
+  MotorOutPut[Idx] = MotorOutPut[Idx] + MotorOutPut[Idx]*ControlValue[Idx];
+  if(MotorOutPut[Idx]<250){MotorOutPut[Idx]=250;}
+  if(MotorOutPut[Idx]>60){MotorOutPut[Idx]=60;}  
+  //Serial.println(MotorOutPut[Idx]);
+}
+
+void PotRead(int PinNum,int Idx){
+  PotVal[Idx] = PotVal[Idx]*0.9+0.1*(((analogRead(PinNum)-512.0)/512.0));
+  Serial.println(PotVal[Idx]);
+  //Serial.println(analogRead(PinNum));
 }
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(1000000);
+  MotorOutPut[0]=160;
+  P[0]=1;
+  I[0]=0;
+  D[0]=0;
+  MaxSummativeError[0] = 1;
+  MaxControl[0]=1;
+  
 }
 
 void loop() {
   ReadRpm(0);
   ReadPot(A0,0);
-  SpeedCalc(0);
-  analogWrite(2, Speed[0]);
-
+  MotorOutPutCalc(0);
+  PotRead(A0,0);
+  analogWrite(2, MotorOutPut[0]);
+  ProcessValue[0] = Rpm[0]/6000;
+  SetPoint[0]=PotVal[0];
 }
