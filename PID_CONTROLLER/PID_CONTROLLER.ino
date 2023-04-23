@@ -20,8 +20,10 @@ void PID(int Idx){
 
 void ReadRpm(int Idx){
   TachoValue[Idx] = digitalRead(Idx+30);
+  //Serial.println(TachoValue[Idx]);
 if(TachoValue[Idx] != OldTachoValue[Idx]){
-  Rpm[Idx] = ((60000000.0/(((micros()-TachoTimer[Idx]))))/6) ;
+  Rpm[Idx] = ((60000000.0/(((micros()-TachoTimer[Idx]))))/6);
+  TachoTimer[Idx] = micros();
   }
 }
 
@@ -29,11 +31,12 @@ if(TachoValue[Idx] != OldTachoValue[Idx]){
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  Serial.begin(1000000);
 }
 
 void loop() {
   ReadRpm(0);
   Serial.println(Rpm[0]);
+  analogWrite(2, 160+0);
 
 }
