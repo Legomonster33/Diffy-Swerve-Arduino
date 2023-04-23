@@ -1,38 +1,39 @@
-float TachoTimer[8],TachovValue[8],OldTachoValue[8],Rpm[8],ControlValue[12],ProcessValue[12],SetPoint[12],P[12],I[12],D[12],MaxSummativeError[12],Error[12],LastError[12],ErrorSummative[12],PreviousTime[12],DeltaTime[12],Proportional,Integral,Derivative,
+float TachoTimer[8],TachoValue[8],OldTachoValue[8],Rpm[8],ControlValue[12],ProcessValue[12],SetPoint[12],P[12],I[12],D[12],MaxSummativeError[12],Error[12],LastError[12],ErrorSummative[12],PreviousTime[12],DeltaTime[12],Proportional,Integral,Derivative;
 
-void PID(Idx){
-  Error[Idx] = SetPoint - ProcessValue[Idx];
-  Proportional = P[Idx]*Error
+void PID(int Idx){
+  Error[Idx] = SetPoint[Idx] - ProcessValue[Idx];
+  Proportional = P[Idx]*Error[Idx];
 
-  ErrorSummative[Idx] = ErrorSummative[Idx] + Error[Idx]
-  if(ErrorSummative[Idx]>MaxSummativeError[Idx]){ErrorSummative[Idx]=MaxSummativeError[Idx]}
-  if(ErrorSummative[Idx]<MaxSummativeError[Idx]*-1){ErrorSummative[Idx]=MaxSummativeError[Idx]*-1}
+  ErrorSummative[Idx] = ErrorSummative[Idx] + Error[Idx];
+  if(ErrorSummative[Idx]>MaxSummativeError[Idx]){ErrorSummative[Idx]=MaxSummativeError[Idx];}
+  if(ErrorSummative[Idx]<MaxSummativeError[Idx]*-1){ErrorSummative[Idx]=MaxSummativeError[Idx]*-1;}
 
-  DeltaTime[Idx] = mircos() - PreviousTime[Idx];
+  DeltaTime[Idx] = micros() - PreviousTime[Idx];
 
   Integral = DeltaTime[Idx]*I[Idx]*ErrorSummative[Idx];
 
-  Derivative = ((D[Idx]/DeltaTime[Idx])/(Error[Idx]-LastError[Idx]))
+  Derivative = ((D[Idx]/DeltaTime[Idx])/(Error[Idx]-LastError[Idx]));
 
   ControlValue[Idx] = Proportional + Integral + Derivative;
 
 }
 
-void ReadRpm(Idx){
-  TachoValue[Idx] = digitalRead(Idx)
+void ReadRpm(int Idx){
+  TachoValue[Idx] = digitalRead(Idx+30);
 if(TachoValue[Idx] != OldTachoValue[Idx]){
-
-}
+  Rpm[Idx] = ((60000000.0/(((micros()-TachoTimer[Idx]))))/6) ;
+  }
 }
 
 
 
 void setup() {
   // put your setup code here, to run once:
-
+  Serial.begin(9600);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  ReadRpm(0);
+  Serial.println(Rpm[0]);
 
 }
