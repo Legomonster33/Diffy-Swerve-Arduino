@@ -184,7 +184,9 @@ void loop() {
   lcd.setCursor(0, 1);
   lcd.print(ProcessValue[0]);
   lcd.setCursor(7, 0);
-  lcd.print(ControlValue[0]);
+  lcd.print(100*ControlValue[0]);
+  lcd.setCursor(7, 1);
+  lcd.print(Rpm[0]);
   LastMillis = millis();
   }
 }
