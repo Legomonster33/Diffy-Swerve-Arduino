@@ -1,3 +1,9 @@
+#include <LiquidCrystal.h>
+
+const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+
+
 float AvgMicrosPerPulse[12],
 MicrosPerRevolution[12],
 MotorOutPut[12],
@@ -60,7 +66,7 @@ void ReadRpm(int Idx){
   
   if(TachoValue[Idx] != OldTachoValue[Idx]){
 
-    TachoDeltaTime[Idx] = micros()-TachoTimer[Idx]; 
+    TachoDeltaTime[Idx] = millis()-TachoTimer[Idx]; 
        
 
     AvgMicrosPerPulse[Idx] = TachoDeltaTime[Idx]*0.5+TachoDeltaTimePrevious[Idx]*0.5;
@@ -83,7 +89,10 @@ void ReadRpm(int Idx){
 
     OldTachoValue[Idx] = TachoValue[Idx];
     
-    TachoTimer[Idx] = micros();
+    TachoTimer[Idx] = millis();
+
+    lcd.clear();
+    lcd.print(Rpm[Idx]);
   }
   
 }
@@ -137,12 +146,20 @@ void PrintAll(int Idx){
   Serial.println();
 }
 
+void PrintToLCD(int Idx){
+  lcd.clear();
+  lcd.print(Rpm[Idx]);
+}
 
 void setup() {
+
+  lcd.begin(16, 2);
+  lcd.print("hello, world!");
+  
   // put your setup code here, to run once:
   //Serial.begin(500000);
   MotorOutPut[0]=160;
-  P[0]=0.1;
+  P[0]=0.001;
   I[0]=0.0;
   D[0]=0.0;
   MaxSummativeError[0] = 1.0;
@@ -155,10 +172,11 @@ void loop() {
   ReadPot(A0,0);
   MotorOutPutCalc(0);
   PotRead(A0,0);
-  analogWrite(2, MotorOutPut[0]);
+  analogWrite(9, MotorOutPut[0]);
   //analogWrite(2, 200);
   ProcessValue[0] = Rpm[0]/5000.0;
   SetPoint[0]=PotVal[0];
   PID(0);
   //PrintAll(0);
+  
 }
