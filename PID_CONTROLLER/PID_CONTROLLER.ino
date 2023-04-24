@@ -55,7 +55,7 @@ void PID(int Idx){
 }
 
 
-#define PulsesPerRevolution 6.0
+#define PulsesPerRevolution 2.0
 #define MicrosecondsPerMinute 60000000.0
 
 
@@ -66,7 +66,7 @@ void ReadRpm(int Idx){
   
   if(TachoValue[Idx] != OldTachoValue[Idx]){
 
-    TachoDeltaTime[Idx] = millis()-TachoTimer[Idx]; 
+    TachoDeltaTime[Idx] = micros()-TachoTimer[Idx]; 
        
 
     AvgMicrosPerPulse[Idx] = TachoDeltaTime[Idx]*0.5+TachoDeltaTimePrevious[Idx]*0.5;
@@ -87,14 +87,14 @@ void ReadRpm(int Idx){
     
     TachoDeltaTimePrevious[Idx] = TachoDeltaTime[Idx];
 
-    OldTachoValue[Idx] = TachoValue[Idx];
     
-    TachoTimer[Idx] = millis();
+    
+    TachoTimer[Idx] = micros();
 
-    lcd.clear();
-    lcd.print(Rpm[Idx]);
+    //lcd.clear();
+    //lcd.print(Rpm[Idx]);
   }
-  
+  OldTachoValue[Idx] = TachoValue[Idx];
 }
 
 void ReadPot(int Pin,int Idx){
@@ -154,19 +154,19 @@ void PrintToLCD(int Idx){
 void setup() {
 
   lcd.begin(16, 2);
-  lcd.print("hello, world!");
+  //lcd.print("hello, world!");
   
   // put your setup code here, to run once:
   //Serial.begin(500000);
   MotorOutPut[0]=160;
-  P[0]=0.001;
+  P[0]=0.01;
   I[0]=0.0;
   D[0]=0.0;
   MaxSummativeError[0] = 1.0;
   MaxControl[0]=1.0;
   
 }
-
+int LastMillis;
 void loop() {
   ReadRpm(0);
   ReadPot(A0,0);
@@ -174,9 +174,17 @@ void loop() {
   PotRead(A0,0);
   analogWrite(9, MotorOutPut[0]);
   //analogWrite(2, 200);
-  ProcessValue[0] = Rpm[0]/5000.0;
+  ProcessValue[0] = Rpm[0]/6000.0;
   SetPoint[0]=PotVal[0];
   PID(0);
   //PrintAll(0);
-  
+  if(millis()-LastMillis>1000){
+  lcd.clear();
+  lcd.print(SetPoint[0]);
+  lcd.setCursor(0, 1);
+  lcd.print(ProcessValue[0]);
+  lcd.setCursor(7, 0);
+  lcd.print(ControlValue[0]);
+  LastMillis = millis();
+  }
 }
