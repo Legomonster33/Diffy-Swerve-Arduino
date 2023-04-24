@@ -108,7 +108,7 @@ void MotorOutPutCalc(int Idx){
 }
 
 void PotRead(int PinNum,int Idx){
-  PotVal[Idx] = PotVal[Idx]*0.9+0.1*(((analogRead(PinNum)-512.0)/512.0));
+  PotVal[Idx] = PotVal[Idx]*0.999+0.001*(((analogRead(PinNum)-512.0)/512.0));
 }
 
 void PrintAll(int Idx){
@@ -159,7 +159,7 @@ void setup() {
   // put your setup code here, to run once:
   //Serial.begin(500000);
   MotorOutPut[0]=160;
-  P[0]=0.01;
+  P[0]=0.005;
   I[0]=0.0;
   D[0]=0.0;
   MaxSummativeError[0] = 1.0;
@@ -178,7 +178,7 @@ void loop() {
   SetPoint[0]=PotVal[0];
   PID(0);
   //PrintAll(0);
-  if(millis()-LastMillis>1000){
+  if(millis()-LastMillis>2000){
   lcd.clear();
   lcd.print(SetPoint[0]);
   lcd.setCursor(0, 1);
