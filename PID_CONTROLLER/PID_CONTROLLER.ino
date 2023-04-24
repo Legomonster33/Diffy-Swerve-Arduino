@@ -35,8 +35,8 @@ Integral,
 Derivative;
 
 void PID(int Idx){
-  if(SetPoint[Idx]<0.0){ProcessValue[Idx]=ProcessValue[Idx]*(-1.0);}
-  Error[Idx] = SetPoint[Idx] - ProcessValue[Idx];
+  if(MotorOutPut[Idx]<160){ProcessValue[Idx]=ProcessValue[Idx]*(-1.0);}
+ Error[Idx] = SetPoint[Idx] - ProcessValue[Idx];
   Proportional = P[Idx]*Error[Idx];
 
   ErrorSummative[Idx] = ErrorSummative[Idx] + Error[Idx];
