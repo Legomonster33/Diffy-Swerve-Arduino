@@ -49,7 +49,7 @@ void PID(int Idx){
 }
 
 
-#define PulsesPerRevolution 6
+#define PulsesPerRevolution 6.0
 #define MicrosecondsPerMinute 60000000.0
 
 
@@ -57,26 +57,35 @@ void PID(int Idx){
 void ReadRpm(int Idx){
   TachoValue[Idx] = digitalRead(Idx+30);
   //Serial.print(TachoValue[Idx]);
-if(TachoValue[Idx] != OldTachoValue[Idx]){
-  TachoDeltaTime[Idx] = micros()-TachoTimer[Idx];  
-  AvgMicrosPerPulse[Idx] = TachoDeltaTime[Idx]*0.5+TachoDeltaTimePrevious[Idx]*0.5;
-  //micros per pulse
-
-  MicrosPerRevolution[Idx] = AvgMicrosPerPulse[Idx]*PulsesPerRevolution;
-  //micros per rotation
-
-  Rpm1[Idx] = MicrosecondsPerMinute/MicrosPerRevolution[Idx];
-  // divide how many microseconds per minute by how many microseconds per revo to get rotations per minute
-
-  Rpm[Idx] = Rpm1[Idx]*0.5+Rpm2[Idx]*0.5;
-  //average last and current rpm
   
-  Rpm2[Idx] = Rpm1[Idx] ;
+  if(TachoValue[Idx] != OldTachoValue[Idx]){
+
+    TachoDeltaTime[Idx] = micros()-TachoTimer[Idx]; 
        
-  TachoTimer[Idx] = micros();
-  TachoDeltaTimePrevious[Idx] = TachoDeltaTime[Idx];
+
+    AvgMicrosPerPulse[Idx] = TachoDeltaTime[Idx]*0.5+TachoDeltaTimePrevious[Idx]*0.5;
+    //micros per pulse
+    //Serial.println(AvgMicrosPerPulse[Idx]);
+
+    MicrosPerRevolution[Idx] = AvgMicrosPerPulse[Idx]*PulsesPerRevolution;
+    //micros per rotation
+
+    Rpm1[Idx] = MicrosecondsPerMinute/MicrosPerRevolution[Idx];
+    // divide how many microseconds per minute by how many microseconds per revo to get rotations per minute
+
+    Rpm[Idx] = Rpm1[Idx]*0.5+Rpm2[Idx]*0.5;
+    //average last and current rpm
+    
+    Rpm2[Idx] = Rpm1[Idx] ;
+        
+    
+    TachoDeltaTimePrevious[Idx] = TachoDeltaTime[Idx];
+
+    OldTachoValue[Idx] = TachoValue[Idx];
+    
+    TachoTimer[Idx] = micros();
   }
-  OldTachoValue[Idx] = TachoValue[Idx];
+  
 }
 
 void ReadPot(int Pin,int Idx){
@@ -84,7 +93,7 @@ void ReadPot(int Pin,int Idx){
 }
 
 void MotorOutPutCalc(int Idx){
-  MotorOutPut[Idx] = MotorOutPut[Idx] - MotorOutPut[Idx]*ControlValue[Idx];
+  MotorOutPut[Idx] = MotorOutPut[Idx] + MotorOutPut[Idx]*ControlValue[Idx];
   if(MotorOutPut[Idx]>250){MotorOutPut[Idx]=250.0;}
   if(MotorOutPut[Idx]<70){MotorOutPut[Idx]=70.0;} 
 }
@@ -131,7 +140,7 @@ void PrintAll(int Idx){
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(1000000);
+  //Serial.begin(500000);
   MotorOutPut[0]=160;
   P[0]=0.1;
   I[0]=0.0;
@@ -151,5 +160,5 @@ void loop() {
   ProcessValue[0] = Rpm[0]/5000.0;
   SetPoint[0]=PotVal[0];
   PID(0);
-  PrintAll(0);
+  //PrintAll(0);
 }
