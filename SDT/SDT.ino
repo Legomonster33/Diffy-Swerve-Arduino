@@ -54,7 +54,7 @@ void  read_joysticks() {
 
   joy1.frREQ = (joy1.yAXISraw/1023)*200;
   joy1.lrREQ = (joy1.xAXISraw/1023)*200;
-    
+  // wtf  
   sprintf(disp,"%f %f", joy1.yAXISraw, joy1.xAXISraw);
   Serial.println(disp);
 
