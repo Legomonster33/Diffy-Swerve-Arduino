@@ -174,7 +174,7 @@ void PrintAll(int Idx){
 
   Serial.println();
 }
-
+// do it
 void PrintToLCD(int Idx){
   lcd.clear();
   lcd.print(Rpm[Idx]);
