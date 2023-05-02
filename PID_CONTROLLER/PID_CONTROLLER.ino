@@ -55,19 +55,52 @@ void PID(int Idx){
 }
 
 
-#define PulsesPerRevolution 2.0
+#define PulsesPerRevolution 1.0
 #define MicrosecondsPerMinute 60000000.0
 
 
 
 void ReadRpm(int Idx){
+  
+  analogWrite (9,245);
+  
   TachoValue[Idx] = digitalRead(Idx+30);
   //Serial.print(TachoValue[Idx]);
   
-  if(TachoValue[Idx] != OldTachoValue[Idx]){
+  if(TachoValue[Idx] != OldTachoValue[Idx] && TachoValue[Idx]==HIGH){
 
     TachoDeltaTime[Idx] = micros()-TachoTimer[Idx]; 
-       
+    
+    if (TachoDeltaTime[Idx] < 10) {
+      lcd.setCursor(0,0);
+      lcd.print("    ");
+      lcd.setCursor(4,0);
+      lcd.print(TachoDeltaTime[Idx]);
+    }
+    if (TachoDeltaTime[Idx] < 100 && TachoDeltaTime[Idx] >= 10) {
+      lcd.setCursor(0,0);
+      lcd.print("   ");
+      lcd.setCursor(3,0);
+      lcd.print(TachoDeltaTime[Idx]);
+    }
+    if (TachoDeltaTime[Idx] < 1000 && TachoDeltaTime[Idx] >= 100) {
+      lcd.setCursor(0,0);
+      lcd.print("  ");
+      lcd.setCursor(2,0);
+      lcd.print(TachoDeltaTime[Idx]);
+    }
+    if (TachoDeltaTime[Idx] < 10000 && TachoDeltaTime[Idx] >= 1000) {
+      lcd.setCursor(0,0);
+      lcd.print(" ");
+      lcd.setCursor(1,0);
+      lcd.print(TachoDeltaTime[Idx]);
+    }
+    if (TachoDeltaTime[Idx] >= 10000) {
+      lcd.setCursor(0,0);
+      lcd.print(TachoDeltaTime[Idx]);
+    }
+
+    lcd.println(TachoDeltaTime[Idx]);
 
     AvgMicrosPerPulse[Idx] = TachoDeltaTime[Idx]*0.5+TachoDeltaTimePrevious[Idx]*0.5;
     //micros per pulse
@@ -86,9 +119,7 @@ void ReadRpm(int Idx){
         
     
     TachoDeltaTimePrevious[Idx] = TachoDeltaTime[Idx];
-
-    
-    
+   
     TachoTimer[Idx] = micros();
 
     //lcd.clear();
@@ -112,8 +143,6 @@ void PotRead(int PinNum,int Idx){
 }
 
 void PrintAll(int Idx){
-
-
 
   Serial.print("SetPoint_: ");
   Serial.print(SetPoint[Idx]);
@@ -168,18 +197,25 @@ void setup() {
 }
 int LastMillis;
 void loop() {
+
   ReadRpm(0);
+/*  
   ReadPot(A0,0);
   MotorOutPutCalc(0);
   PotRead(A0,0);
   analogWrite(9, MotorOutPut[0]);
+*/
   //analogWrite(2, 200);
+/*
   ProcessValue[0] = Rpm[0]/6000.0;
   SetPoint[0]=PotVal[0];
   PID(0);
+*/
   //PrintAll(0);
+/*
   if(millis()-LastMillis>2000){
-  lcd.clear();
+
+  /*lcd.clear();
   lcd.print(SetPoint[0]);
   lcd.setCursor(0, 1);
   lcd.print(ProcessValue[0]);
@@ -189,4 +225,5 @@ void loop() {
   lcd.print(Rpm[0]);
   LastMillis = millis();
   }
+*/
 }
