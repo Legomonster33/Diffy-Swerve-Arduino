@@ -1,6 +1,7 @@
 
 #include  <stdio.h>
 #include  <math.h>
+#include  <TimerOne.h>
 
 #define pi  3.141592654
 
@@ -20,6 +21,8 @@
 #define JOYSTICK_STRAFE_IN  A1
 #define JOYSTICK_ROTATE_IN  A2
 
+#define PULSES_PER_REVOLUTION 3
+
 struct joystick{
   int     yAXISraw;             // analog input from joystick 1 for forward and reverse
   int     xAXISraw;             // analog input from joystick 1 for left and right
@@ -28,11 +31,11 @@ struct joystick{
 };
 
 struct  swerveModule {
-  bool  pulseSUN;
+  unsigned  int   sunPULSEcount;
   unsigned  long  sunPULSEtime;
   unsigned  long  sunPULSElast;
   unsigned  long  sunPULSEwidth;
-  bool            pulseRING;
+  unsigned  int   ringPULSEcount;
   unsigned  long  ringPULSEtime;
   unsigned  long  ringPULSElast;
   unsigned  long  ringPULSEwidth;
@@ -45,10 +48,10 @@ struct  swerveModule {
   float directionREQ;     // steering angle request for module
 };
 
-struct  joystick      joy1;
-struct  joystick      joy2;
-struct  swerveModule  swMOD1;
-struct  swerveModule  swMOD2;
+struct            joystick      joy1;
+struct            joystick      joy2;
+volatile  struct  swerveModule  swMOD1;
+volatile  struct  swerveModule  swMOD2;
 
 bool  firstPASS;
 const byte  mod2RingTachPin = 18;
@@ -128,9 +131,19 @@ void  calc_module_ctrl(float FWD, float STR, float RCW, float GYRO) {
 
 // This is the interrupt routine executed when a TACH pulse is detected for the Ring Gear Motor
 
-void mod2RINGtach(){
-  swMOD2.pulseRING = HIGH;
-  swMOD2.ringPULSEtime = millis();
+void mod2RINGtachPULSE(){
+  swMOD2.ringPULSEcount++;  
+}
+
+void timerIsr()
+{
+  Timer1.detachInterrupt();  //stop the timer
+  Serial.print("Motor Speed: "); 
+  float rotation = ((float(swMOD2.ringPULSEcount) / PULSES_PER_REVOLUTION) * 10.0);  // divide by number of holes in Disc
+  Serial.print(swMOD2.ringPULSEcount,DEC);  
+  Serial.println(" Rotation per second"); 
+  swMOD2.ringPULSEcount=0;  //  reset counter to zero
+  Timer1.attachInterrupt( timerIsr );  //enable the timer
 }
 
 void setup() {
@@ -142,9 +155,13 @@ void setup() {
   pinMode(32,OUTPUT);
   pinMode(34,OUTPUT);
 
+  Timer1.initialize(10000000); // set timer for 1sec
+  Timer1.attachInterrupt( timerIsr ); // enable the timer
+
   pinMode(mod2RingTachPin,INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(mod2RingTachPin),mod2RINGtach,RISING);
+  attachInterrupt(digitalPinToInterrupt(mod2RingTachPin),mod2RINGtachPULSE,RISING);
   firstPASS = 1;
+  swMOD2.ringPULSEcount=0;
 }
 
 void loop() {
@@ -152,37 +169,16 @@ void loop() {
 
   float tempRPMcalc;
   int yVAL, xVAL;
-  int ZERO = 0;
-  int SIX_THOUSAND = 6000;
 
 //  read_joysticks();
-//calc_module_ctrl(joy1.yAXISreq, joy1.xAXISreq, 0, 0);
+//  calc_module_ctrl(joy1.yAXISreq, joy1.xAXISreq, 0, 0);
 
-  yVAL = 512; xVAL = 800;
-
-//  yVAL = analogRead(A0)*.1+(analogRead(A0)-yVAL)*.9;
-//  xVAL = analogRead(A1);
-
+  yVAL = 512; xVAL = 600;
 
   analogWrite(MOD1_SUN_MOTOR_OUT,yVAL/1023.0*180.0+65);
   analogWrite(MOD1_RING_MOTOR_OUT,xVAL/1023.0*180.0+65);
   analogWrite(MOD2_SUN_MOTOR_OUT,yVAL/1023.0*180.0+65);
   analogWrite(MOD2_RING_MOTOR_OUT,xVAL/1023.0*180.0+65);
-
-  if (swMOD2.pulseRING){
-    swMOD2.pulseRING = LOW;
-    swMOD2.ringPULSEwidth = swMOD2.ringPULSEtime - swMOD2.ringPULSElast;
-    tempRPMcalc = (60000/swMOD2.ringPULSEwidth);
-    swMOD2.ringRPM = swMOD2.ringRPM * .9 + (tempRPMcalc - swMOD2.ringRPM) * .1;
-    swMOD2.ringPULSElast = swMOD2.ringPULSEtime;
-  }  
-
-  Serial.print("ZERO_:");
-  Serial.println(ZERO);
-  Serial.print("Sixto_:");
-  Serial.println(SIX_THOUSAND);
-  Serial.print("RPM_:");
-  Serial.println(swMOD2.ringRPM*3);
 
 }
 
