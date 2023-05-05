@@ -1,4 +1,5 @@
-
+#include  <avr/interrupt.h>
+#include  <avr/io.h>
 #include  <stdio.h>
 #include  <math.h>
 #include  <TimerOne.h>
@@ -21,7 +22,7 @@
 #define JOYSTICK_STRAFE_IN  A1
 #define JOYSTICK_ROTATE_IN  A2
 
-#define PULSES_PER_REVOLUTION 3
+#define PULSES_PER_REVOLUTION 9
 
 struct joystick{
   int     yAXISraw;             // analog input from joystick 1 for forward and reverse
@@ -55,6 +56,7 @@ volatile  struct  swerveModule  swMOD2;
 
 bool  firstPASS;
 const byte  mod2RingTachPin = 18;
+int i;
 
 void  read_joysticks() {
   
@@ -138,10 +140,15 @@ void mod2RINGtachPULSE(){
 void timerIsr()
 {
   Timer1.detachInterrupt();  //stop the timer
-  Serial.print("Motor Speed: "); 
-  float rotation = ((float(swMOD2.ringPULSEcount) / PULSES_PER_REVOLUTION) * 10.0);  // divide by number of holes in Disc
-  Serial.print(swMOD2.ringPULSEcount,DEC);  
-  Serial.println(" Rotation per second"); 
+  int rotation = (swMOD2.ringPULSEcount);  // divide by number of holes in Disc
+  Serial.print(0);
+  Serial.print(",");
+  Serial.print(i);
+  Serial.print(",");
+  Serial.print(rotation,DEC); 
+  Serial.print(",");
+  Serial.println(1500); 
+
   swMOD2.ringPULSEcount=0;  //  reset counter to zero
   Timer1.attachInterrupt( timerIsr );  //enable the timer
 }
@@ -155,11 +162,11 @@ void setup() {
   pinMode(32,OUTPUT);
   pinMode(34,OUTPUT);
 
-  Timer1.initialize(10000000); // set timer for 1sec
+  Timer1.initialize(1000000); // set timer for 1sec
   Timer1.attachInterrupt( timerIsr ); // enable the timer
 
   pinMode(mod2RingTachPin,INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(mod2RingTachPin),mod2RINGtachPULSE,RISING);
+  attachInterrupt(digitalPinToInterrupt(mod2RingTachPin),mod2RINGtachPULSE,1);
   firstPASS = 1;
   swMOD2.ringPULSEcount=0;
 }
@@ -173,12 +180,19 @@ void loop() {
 //  read_joysticks();
 //  calc_module_ctrl(joy1.yAXISreq, joy1.xAXISreq, 0, 0);
 
-  yVAL = 512; xVAL = 600;
+ 
 
-  analogWrite(MOD1_SUN_MOTOR_OUT,yVAL/1023.0*180.0+65);
-  analogWrite(MOD1_RING_MOTOR_OUT,xVAL/1023.0*180.0+65);
-  analogWrite(MOD2_SUN_MOTOR_OUT,yVAL/1023.0*180.0+65);
-  analogWrite(MOD2_RING_MOTOR_OUT,xVAL/1023.0*180.0+65);
+  //xVAL = analogRead(A1);
+
+  for (i=512; i<=800; i+=20){
+
+  analogWrite(MOD1_SUN_MOTOR_OUT,512/1023.0*180.0+65);
+  analogWrite(MOD1_RING_MOTOR_OUT,512/1023.0*180.0+65);
+  analogWrite(MOD2_SUN_MOTOR_OUT,512/1023.0*180.0+65);
+  analogWrite(MOD2_RING_MOTOR_OUT,512/1023.0*180.0+65);
+  delay(5000);
+  }
+
 
 }
 
