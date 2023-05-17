@@ -22,7 +22,7 @@
 #define JOYSTICK_STRAFE_IN  A1
 #define JOYSTICK_ROTATE_IN  A2
 
-#define PULSES_PER_REVOLUTION 9
+bool TimePulse;
 
 struct joystick{
   int     yAXISraw;             // analog input from joystick 1 for forward and reverse
@@ -35,18 +35,11 @@ struct  swerveModule {
   unsigned  int   sunPULSEcount;
   unsigned  long  sunPULSEtime;
   unsigned  long  sunPULSElast;
-  unsigned  long  sunPULSEwidth;
+  unsigned  long  sunRPS;
   unsigned  int   ringPULSEcount;
   unsigned  long  ringPULSEtime;
   unsigned  long  ringPULSElast;
-  unsigned  long  ringPULSEwidth;
-
-  float sunRPM;           // RPM for SUN motor;
-  float sunRPMlast;
-  float ringRPM;          // RPM for RING motor;
-  float ringRPMlast;
-  float speedREQ;         // forward speed request for module
-  float directionREQ;     // steering angle request for module
+  unsigned  long  ringRPS;
 };
 
 struct            joystick      joy1;
@@ -55,8 +48,11 @@ volatile  struct  swerveModule  swMOD1;
 volatile  struct  swerveModule  swMOD2;
 
 bool  firstPASS;
-const byte  mod2RingTachPin = 18;
-int i;
+
+const byte  mod1sunTACHpin = 19;
+const byte  mod2ringTACHpin = 18;
+int speedREQ = 512;
+int speedINC = 0;
 
 void  read_joysticks() {
   
@@ -133,23 +129,16 @@ void  calc_module_ctrl(float FWD, float STR, float RCW, float GYRO) {
 
 // This is the interrupt routine executed when a TACH pulse is detected for the Ring Gear Motor
 
-void mod2RINGtachPULSE(){
+void mod1sunTACHpulse(){
+  swMOD1.sunPULSEcount++;  
+}
+void mod2ringTACHpulse(){
   swMOD2.ringPULSEcount++;  
 }
-
 void timerIsr()
 {
   Timer1.detachInterrupt();  //stop the timer
-  int rotation = (swMOD2.ringPULSEcount);  // divide by number of holes in Disc
-  Serial.print(0);
-  Serial.print(",");
-  Serial.print(i);
-  Serial.print(",");
-  Serial.print(rotation,DEC); 
-  Serial.print(",");
-  Serial.println(1500); 
-
-  swMOD2.ringPULSEcount=0;  //  reset counter to zero
+  TimePulse = 1;
   Timer1.attachInterrupt( timerIsr );  //enable the timer
 }
 
@@ -162,37 +151,72 @@ void setup() {
   pinMode(32,OUTPUT);
   pinMode(34,OUTPUT);
 
-  Timer1.initialize(1000000); // set timer for 1sec
+  Timer1.initialize(1000000); // set timer for 0.10sec
   Timer1.attachInterrupt( timerIsr ); // enable the timer
 
-  pinMode(mod2RingTachPin,INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(mod2RingTachPin),mod2RINGtachPULSE,1);
+  //pinMode(mod2RingTachPin,INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(mod1sunTACHpin),mod1sunTACHpulse,RISING);
+  attachInterrupt(digitalPinToInterrupt(mod2ringTACHpin),mod2ringTACHpulse,RISING);
   firstPASS = 1;
-  swMOD2.ringPULSEcount=0;
+  swMOD2.sunPULSEcount = 0;
+  swMOD2.ringPULSEcount = 0;
+  TimePulse = 0;
 }
+
+float xpot=512;
+float ypot=512;
 
 void loop() {
   // put your main code here, to run repeatedly:
 
-  float tempRPMcalc;
-  int yVAL, xVAL;
+  //float tempRPMcalc;
+  //int yVAL, xVAL;
 
 //  read_joysticks();
 //  calc_module_ctrl(joy1.yAXISreq, joy1.xAXISreq, 0, 0);
 
- 
-
   //xVAL = analogRead(A1);
 
-  for (i=512; i<=800; i+=20){
-
   analogWrite(MOD1_SUN_MOTOR_OUT,512/1023.0*180.0+65);
-  analogWrite(MOD1_RING_MOTOR_OUT,512/1023.0*180.0+65);
-  analogWrite(MOD2_SUN_MOTOR_OUT,512/1023.0*180.0+65);
+//  analogWrite(MOD1_RING_MOTOR_OUT,512/1023.0*180.0+65);
+//  analogWrite(MOD2_SUN_MOTOR_OUT,512/1023.0*180.0+65);
   analogWrite(MOD2_RING_MOTOR_OUT,512/1023.0*180.0+65);
-  delay(5000);
+
+
+
+//xpot=xpot*0.95+0.05*analogRead(A3);
+//ypot=ypot*0.95+0.05*analogRead(A4);
+
+//Serial.println(xpot);
+
+//analogWrite(MOD2_RING_MOTOR_OUT,xpot/1023.0*180.0+65);
+//analogWrite(MOD2_SUN_MOTOR_OUT,ypot/1023.0*180.0+65);
+//analogWrite(MOD1_SUN_MOTOR_OUT,xpot/1023.0*180.0+65);
+//analogWrite(MOD1_RING_MOTOR_OUT,ypot/1023.0*180.0+65);
+
+  if (TimePulse == 1){
+    swMOD1.sunRPS = swMOD1.sunRPS*.8 + (((swMOD1.sunPULSEcount/6)-swMOD1.sunRPS)*.2);
+    Serial.print(0);
+    Serial.print(",");
+    Serial.print(swMOD1.sunRPS);
+    Serial.print(",");
+    Serial.print(swMOD1.sunPULSEcount);
+    Serial.print(",");
+    Serial.println(300);
+  
+    swMOD1.sunPULSEcount = 0;
+    swMOD1.ringPULSEcount = 0;
+    swMOD2.sunPULSEcount = 0;
+    swMOD2.ringPULSEcount = 0;
+    TimePulse = 0;
+    speedINC++;
   }
 
+  if (speedINC > 20){
+    speedREQ += 50;
+    speedINC = 0;
+    if (speedREQ >= 1000) speedREQ = 512;
+  }
 
 }
 
