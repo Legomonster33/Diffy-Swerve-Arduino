@@ -32,10 +32,12 @@ struct joystick{
 };
 
 struct  swerveModule {
+  int             sunENCODERwindows;
   unsigned  int   sunPULSEcount;
   unsigned  long  sunPULSEtime;
   unsigned  long  sunPULSElast;
   unsigned  long  sunRPS;
+  int             ringENCODERwindows;
   unsigned  int   ringPULSEcount;
   unsigned  long  ringPULSEtime;
   unsigned  long  ringPULSElast;
@@ -49,8 +51,11 @@ volatile  struct  swerveModule  swMOD2;
 
 bool  firstPASS;
 
-const byte  mod1sunTACHpin = 19;
-const byte  mod2ringTACHpin = 18;
+const byte  mod1sunTACHpin = 2;
+const byte  mod1ringTACHpin = 3;
+const byte  mod2sunTACHpin = 18;
+const byte  mod2ringTACHpin = 19;
+
 int speedREQ = 512;
 int speedINC = 0;
 
@@ -127,14 +132,21 @@ void  calc_module_ctrl(float FWD, float STR, float RCW, float GYRO) {
   }
 }
 
-// This is the interrupt routine executed when a TACH pulse is detected for the Ring Gear Motor
+// This is the interrupt routine executed when a TACH pulse is detected for any of the attached motors
 
 void mod1sunTACHpulse(){
   swMOD1.sunPULSEcount++;  
 }
+void mod1ringTACHpulse(){
+  swMOD1.ringPULSEcount++;  
+}
+void mod2sunTACHpulse(){
+  swMOD2.sunPULSEcount++;  
+}
 void mod2ringTACHpulse(){
   swMOD2.ringPULSEcount++;  
 }
+
 void timerIsr()
 {
   Timer1.detachInterrupt();  //stop the timer
@@ -151,15 +163,33 @@ void setup() {
   pinMode(32,OUTPUT);
   pinMode(34,OUTPUT);
 
+  pinMode (MOD1_SUN_MOTOR_OUT, OUTPUT);
+  pinMode (MOD1_RING_MOTOR_OUT, OUTPUT);
+  pinMode (MOD2_SUN_MOTOR_OUT, OUTPUT);
+  pinMode (MOD2_RING_MOTOR_OUT, OUTPUT);
+
   Timer1.initialize(1000000); // set timer for 0.10sec
   Timer1.attachInterrupt( timerIsr ); // enable the timer
 
-  //pinMode(mod2RingTachPin,INPUT_PULLUP);
+  pinMode(mod1sunTACHpin,INPUT_PULLUP);
+  pinMode(mod1ringTACHpin,INPUT_PULLUP);
+  pinMode(mod2sunTACHpin,INPUT_PULLUP);
+  pinMode(mod2ringTACHpin,INPUT_PULLUP);
+
   attachInterrupt(digitalPinToInterrupt(mod1sunTACHpin),mod1sunTACHpulse,RISING);
+  attachInterrupt(digitalPinToInterrupt(mod1ringTACHpin),mod1ringTACHpulse,RISING);
+  attachInterrupt(digitalPinToInterrupt(mod2sunTACHpin),mod2sunTACHpulse,RISING);
   attachInterrupt(digitalPinToInterrupt(mod2ringTACHpin),mod2ringTACHpulse,RISING);
+
   firstPASS = 1;
+
+  // initialize all tachometer pulse counters
+
+  swMOD1.sunPULSEcount = 0;
+  swMOD1.ringPULSEcount = 0;
   swMOD2.sunPULSEcount = 0;
   swMOD2.ringPULSEcount = 0;
+
   TimePulse = 0;
 }
 
@@ -177,17 +207,15 @@ void loop() {
 
   //xVAL = analogRead(A1);
 
-  analogWrite(MOD1_SUN_MOTOR_OUT,512/1023.0*180.0+65);
-//  analogWrite(MOD1_RING_MOTOR_OUT,512/1023.0*180.0+65);
-//  analogWrite(MOD2_SUN_MOTOR_OUT,512/1023.0*180.0+65);
-  analogWrite(MOD2_RING_MOTOR_OUT,512/1023.0*180.0+65);
+  analogWrite(MOD1_SUN_MOTOR_OUT,speedREQ/1023.0*180.0+65);
+  analogWrite(MOD1_RING_MOTOR_OUT,speedREQ/1023.0*180.0+65);
+  analogWrite(MOD2_SUN_MOTOR_OUT,speedREQ/1023.0*180.0+65);
+  analogWrite(MOD2_RING_MOTOR_OUT,speedREQ/1023.0*180.0+65);
 
-
+// read the joystick and use to control the ring and sun motors
 
 //xpot=xpot*0.95+0.05*analogRead(A3);
 //ypot=ypot*0.95+0.05*analogRead(A4);
-
-//Serial.println(xpot);
 
 //analogWrite(MOD2_RING_MOTOR_OUT,xpot/1023.0*180.0+65);
 //analogWrite(MOD2_SUN_MOTOR_OUT,ypot/1023.0*180.0+65);
@@ -195,12 +223,28 @@ void loop() {
 //analogWrite(MOD1_RING_MOTOR_OUT,ypot/1023.0*180.0+65);
 
   if (TimePulse == 1){
+    
+    swMOD1.sunRPS = swMOD1.sunPULSEcount / 6;
+    swMOD1.ringRPS = swMOD1.ringPULSEcount / 6;
+    swMOD1.sunRPS = swMOD2.sunPULSEcount / 6;
+    swMOD1.ringRPS = swMOD2.ringPULSEcount / 6;
+
+    /*
     swMOD1.sunRPS = swMOD1.sunRPS*.8 + (((swMOD1.sunPULSEcount/6)-swMOD1.sunRPS)*.2);
+    swMOD1.ringRPS = swMOD1.ringRPS*.8 + (((swMOD1.ringPULSEcount/6)-swMOD1.ringRPS)*.2);
+    swMOD2.sunRPS = swMOD2.sunRPS*.8 + (((swMOD2.sunPULSEcount/6)-swMOD2.sunRPS)*.2);
+    swMOD2.ringRPS = swMOD2.ringRPS*.8 + (((swMOD2.ringPULSEcount/6)-swMOD2.ringRPS)*.2);
+    */
+  
     Serial.print(0);
     Serial.print(",");
     Serial.print(swMOD1.sunRPS);
     Serial.print(",");
-    Serial.print(swMOD1.sunPULSEcount);
+    Serial.print(swMOD1.ringRPS);
+    Serial.print(",");
+    Serial.print(swMOD2.sunRPS);
+    Serial.print(",");
+    Serial.print(swMOD2.ringRPS);
     Serial.print(",");
     Serial.println(300);
   
@@ -209,10 +253,11 @@ void loop() {
     swMOD2.sunPULSEcount = 0;
     swMOD2.ringPULSEcount = 0;
     TimePulse = 0;
+    
     speedINC++;
   }
 
-  if (speedINC > 20){
+  if (speedINC > 30){
     speedREQ += 50;
     speedINC = 0;
     if (speedREQ >= 1000) speedREQ = 512;
