@@ -208,17 +208,8 @@ void setup() {
 
 }
 
-float xpot=512;
-float ypot=512;
-
 void loop() {
   // put your main code here, to run repeatedly:
-
-  //float tempRPMcalc;
-  //int yVAL, xVAL;
-
-//  read_joysticks();
-//  calc_module_ctrl(joy1.yAXISreq, joy1.xAXISreq, 0, 0);
 
   //xVAL = analogRead(A1);
 
@@ -230,16 +221,6 @@ void loop() {
   analogWrite(MOD2_SUN_MOTOR_OUT,speedREQsun/1023.0*180.0+65);
   analogWrite(MOD2_RING_MOTOR_OUT,speedREQring/1023.0*180.0+65);
 
-// read the joystick and use to control the ring and sun motors
-
-//xpot=xpot*0.95+0.05*analogRead(A3);
-//ypot=ypot*0.95+0.05*analogRead(A4);
-
-//analogWrite(MOD2_RING_MOTOR_OUT,xpot/1023.0*180.0+65);
-//analogWrite(MOD2_SUN_MOTOR_OUT,ypot/1023.0*180.0+65);
-//analogWrite(MOD1_SUN_MOTOR_OUT,xpot/1023.0*180.0+65);
-//analogWrite(MOD1_RING_MOTOR_OUT,ypot/1023.0*180.0+65);
-
   if (TimePulse == 1){
     
     swMOD1.sunRPS = swMOD1.sunPULSEcount / 3;
@@ -247,13 +228,6 @@ void loop() {
     swMOD2.sunRPS = swMOD2.sunPULSEcount / 3;
     swMOD2.ringRPS = swMOD2.ringPULSEcount / 3;
 
-    /*
-    swMOD1.sunRPS = swMOD1.sunRPS*.8 + (((swMOD1.sunPULSEcount/6)-swMOD1.sunRPS)*.2);
-    swMOD1.ringRPS = swMOD1.ringRPS*.8 + (((swMOD1.ringPULSEcount/6)-swMOD1.ringRPS)*.2);
-    swMOD2.sunRPS = swMOD2.sunRPS*.8 + (((swMOD2.sunPULSEcount/6)-swMOD2.sunRPS)*.2);
-    swMOD2.ringRPS = swMOD2.ringRPS*.8 + (((swMOD2.ringPULSEcount/6)-swMOD2.ringRPS)*.2);
-    */
-  
     Serial.print(0);
     Serial.print(",");
     Serial.print("SUN");
