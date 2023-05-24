@@ -13,10 +13,10 @@
 #define DT_TRACK_WIDTH    100
 #define DT_WHEEL_BASE     100
 
-#define MOD1_SUN_MOTOR_OUT  5
-#define MOD1_RING_MOTOR_OUT 6
-#define MOD2_SUN_MOTOR_OUT  7
-#define MOD2_RING_MOTOR_OUT 8
+#define MOD1_SUN_MOTOR_OUT  9
+#define MOD1_RING_MOTOR_OUT 10
+#define MOD2_SUN_MOTOR_OUT  11
+#define MOD2_RING_MOTOR_OUT 12
 
 #define JOYSTICK_MOVE_IN    A0
 #define JOYSTICK_STRAFE_IN  A1
@@ -56,7 +56,8 @@ const byte  mod1ringTACHpin = 3;
 const byte  mod2sunTACHpin = 18;
 const byte  mod2ringTACHpin = 19;
 
-int speedREQ = 512;
+int speedREQsun = 512;
+int speedREQring = 512;
 int speedINC = 0;
 
 void  read_joysticks() {
@@ -154,6 +155,9 @@ void timerIsr()
   Timer1.attachInterrupt( timerIsr );  //enable the timer
 }
 
+int myEraser = 7; // used to reset the timer control bits (0, 1, and 2)
+int myPrescaler = 3; // used to select prescaler 4 for a PWM frequency of 120 hz
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
@@ -191,6 +195,17 @@ void setup() {
   swMOD2.ringPULSEcount = 0;
 
   TimePulse = 0;
+
+  // Change timer 1 prescalar which controls the PWN for pins 11 and 12 to be 120hz from default of 490 hz
+
+    TCCR1B &= ~myEraser;
+    TCCR1B |= myPrescaler;
+    
+  // Change timer 2 prescalar which controls the PWN for pins 9 and 10 to be 120hz from default of 490 hz
+
+    TCCR2B &= ~myEraser;
+    TCCR2B |= myPrescaler;
+
 }
 
 float xpot=512;
@@ -207,10 +222,13 @@ void loop() {
 
   //xVAL = analogRead(A1);
 
-  analogWrite(MOD1_SUN_MOTOR_OUT,speedREQ/1023.0*180.0+65);
-  analogWrite(MOD1_RING_MOTOR_OUT,speedREQ/1023.0*180.0+65);
-  analogWrite(MOD2_SUN_MOTOR_OUT,speedREQ/1023.0*180.0+65);
-  analogWrite(MOD2_RING_MOTOR_OUT,speedREQ/1023.0*180.0+65);
+  speedREQsun += (analogRead(A3) - speedREQsun)*.2;
+  speedREQring += (analogRead(A4)- speedREQring)*.2;
+
+  analogWrite(MOD1_SUN_MOTOR_OUT,speedREQsun/1023.0*180.0+65);
+  analogWrite(MOD1_RING_MOTOR_OUT,speedREQring/1023.0*180.0+65);
+  analogWrite(MOD2_SUN_MOTOR_OUT,speedREQsun/1023.0*180.0+65);
+  analogWrite(MOD2_RING_MOTOR_OUT,speedREQring/1023.0*180.0+65);
 
 // read the joystick and use to control the ring and sun motors
 
@@ -224,10 +242,10 @@ void loop() {
 
   if (TimePulse == 1){
     
-    swMOD1.sunRPS = swMOD1.sunPULSEcount / 6;
-    swMOD1.ringRPS = swMOD1.ringPULSEcount / 6;
-    swMOD1.sunRPS = swMOD2.sunPULSEcount / 6;
-    swMOD1.ringRPS = swMOD2.ringPULSEcount / 6;
+    swMOD1.sunRPS = swMOD1.sunPULSEcount / 3;
+    swMOD1.ringRPS = swMOD1.ringPULSEcount / 3;
+    swMOD2.sunRPS = swMOD2.sunPULSEcount / 3;
+    swMOD2.ringRPS = swMOD2.ringPULSEcount / 3;
 
     /*
     swMOD1.sunRPS = swMOD1.sunRPS*.8 + (((swMOD1.sunPULSEcount/6)-swMOD1.sunRPS)*.2);
@@ -238,15 +256,15 @@ void loop() {
   
     Serial.print(0);
     Serial.print(",");
-    Serial.print(swMOD1.sunRPS);
+    Serial.print("SUN");
     Serial.print(",");
-    Serial.print(swMOD1.ringRPS);
+    Serial.print(speedREQsun);
     Serial.print(",");
-    Serial.print(swMOD2.sunRPS);
+    Serial.print("RING");
     Serial.print(",");
-    Serial.print(swMOD2.ringRPS);
+    Serial.print(speedREQring);
     Serial.print(",");
-    Serial.println(300);
+    Serial.println(256);
   
     swMOD1.sunPULSEcount = 0;
     swMOD1.ringPULSEcount = 0;
@@ -258,9 +276,9 @@ void loop() {
   }
 
   if (speedINC > 30){
-    speedREQ += 50;
+    // speedREQ += 50;
     speedINC = 0;
-    if (speedREQ >= 1000) speedREQ = 512;
+    // if (speedREQ >= 1000) speedREQ = 512;
   }
 
 }
