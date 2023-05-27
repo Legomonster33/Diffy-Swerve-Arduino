@@ -33,6 +33,7 @@ struct  swerveModule {
   unsigned  long  sunPULSElast;
   unsigned  long  sunRPS;
   int             sunMOTORspeedREQ;
+  float           sunMOTORspeedOUT;
   unsigned  int   sunMOTORpinOUTPUT;
   int             ringENCODERwindows;
   unsigned  int   ringPULSEcount;
@@ -40,6 +41,7 @@ struct  swerveModule {
   unsigned  long  ringPULSElast;
   unsigned  long  ringRPS;
   int             ringMOTORspeedREQ;
+  float           ringMOTORspeedOUT;
   unsigned  int   ringMOTORpinOUTPUT;
 
 };
@@ -219,18 +221,26 @@ Serial.print(",");
 Serial.println(TCCR4B);
 }
 
+
+
 void loop() {
   // put your main code here, to run repeatedly:
 
   //xVAL = analogRead(A1);
 
-  speedREQsun += (analogRead(A3) - speedREQsun)*.2;
-  speedREQring += (analogRead(A4)- speedREQring)*.2;
+
+  speedREQsun += (analogRead(A0) - speedREQsun)*.2;
+  speedREQring += (analogRead(A1)- speedREQring)*.2;
 
   swMOD1.sunMOTORspeedREQ = speedREQsun / 1023.0 * 180 + 65;
   swMOD1.ringMOTORspeedREQ = speedREQring / 1023.0 * 180 + 65;
   swMOD2.sunMOTORspeedREQ = speedREQsun / 1023.0 * 180 + 65;
   swMOD2.ringMOTORspeedREQ = speedREQring / 1023.0 * 180 + 65;
+
+  swMOD1.sunMOTORspeedOUT = speedREQsun / 1023.0 * 200.0 - 100.0;
+  swMOD1.ringMOTORspeedOUT = speedREQring / 1023.0 * 200.0 - 100.0;
+  swMOD2.sunMOTORspeedOUT = speedREQsun / 1023.0 * 200.0 - 100.0;
+  swMOD2.ringMOTORspeedOUT = speedREQring / 1023.0 * 200.0 - 100.0;
 
   analogWrite(swMOD1.sunMOTORpinOUTPUT,swMOD1.sunMOTORspeedREQ);
   analogWrite(swMOD1.ringMOTORpinOUTPUT,swMOD1.ringMOTORspeedREQ);
@@ -245,29 +255,37 @@ void loop() {
     swMOD2.ringRPS = swMOD2.ringPULSEcount / 3;
 
     Serial.print(0);
+    Serial.print(",");
+    /*
     Serial.print(",module 1 [ SUN, (");
-    Serial.print(swMOD1.sunMOTORpinOUTPUT);
+    Serial.print(swMOD1.sunRPS);
     Serial.print(") ");
     Serial.print(swMOD1.sunMOTORspeedREQ);
     Serial.print(" RING, (");
-    Serial.print(swMOD1.ringMOTORpinOUTPUT);
+    Serial.print(swMOD1.ringRPS);
     Serial.print(") ");
     Serial.print(swMOD1.ringMOTORspeedREQ);
     Serial.print("] module 2 [ SUN, (");
-    Serial.print(swMOD2.sunMOTORpinOUTPUT);
+    Serial.print(swMOD2.sunRPS);
     Serial.print(") ");
     Serial.print(swMOD2.sunMOTORspeedREQ);
     Serial.print(" RING, (");
-    Serial.print(swMOD2.ringMOTORpinOUTPUT);
+    Serial.print(swMOD2.ringRPS);
     Serial.print(") ");
     Serial.print(swMOD2.ringMOTORspeedREQ);
+    */
+
+  Serial.print(swMOD2.sunPULSEcount);
+  Serial.print(",");
+  Serial.print(swMOD2.ringPULSEcount);
+
     Serial.print(",");
     Serial.println(256);
   
-    swMOD1.sunPULSEcount = 0;
-    swMOD1.ringPULSEcount = 0;
-    swMOD2.sunPULSEcount = 0;
-    swMOD2.ringPULSEcount = 0;
+    //swMOD1.sunPULSEcount = 0;
+    //swMOD1.ringPULSEcount = 0;
+    //swMOD2.sunPULSEcount = 0;
+    //swMOD2.ringPULSEcount = 0;
     TimePulse = 0;
     
     speedINC++;
