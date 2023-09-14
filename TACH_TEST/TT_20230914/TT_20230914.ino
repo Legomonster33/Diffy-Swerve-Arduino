@@ -4,6 +4,11 @@
 #include  <math.h>
 #include  <TimerOne.h>
 
+#define AIRAWMIN  0
+#define AIRAWMAX  1023
+#define PWM_MIN   64
+#define PWM_MAX   254
+
 struct  swerveModule {
   int             sunENCODERwindows;
   unsigned  int   sunPULSEcount;
@@ -55,13 +60,32 @@ void setup() {
   pinMode (swMOD2.sunMOTORpinOUTPUT, OUTPUT);
   pinMode (swMOD2.ringMOTORpinOUTPUT, OUTPUT);
 
-  // Adjust system timer 3 prescalar from default of 490 hz (0b011 / 0x03) to 122 hz (0b100/ 0x04)
-  // (spark motor controller requires PWM from 16 hz to 200 hz, default from system timer is 490hz, too high)
+  // ***************************************
+  // PRE-SCALAR Adjustment for system timers
+  //
+  // Timer 1 (TCCR1B)
+  // Timer 2 (TCCR2B)
+  // Timer 3 (TCCR3B)
+  // Timer 4 (TCCR4B)
+  // Timer 5 (TCCR5B)
+  //
+  //  0x01 (0b001) = 31250.00 Hz
+  //  0x02 (0b010) =  3906.25 Hz
+  //  0x03 (0b011) =   488.28 Hz
+  //  0x04 (0b100) =   122.07 Hz
+  //  0x05 (0b101) =    30.52 Hz
+  //
+  //  Example;
+  //  change timer 2 to 122.07 Hz
+  //
+  //  TCCR2B &= 0b11111000;
+  //  TCCR2B |= 0b00000100;
+  //
+  // ***************************************
+
   TCCR3B &= 0b11111000;
   TCCR3B |= 0b00000011;
 
-  // Adjust system timer 4 prescalar from default of 490 hz (0b11 / 0x03) to 122 hz (0b100 / 0x04)
-  // (spark motor controller requires PWM from 16 hz to 200 hz, default from system timer is 490hz, too high)
   TCCR4B &= 0b11111000;
   TCCR4B |= 0b00000011;
 
@@ -77,7 +101,7 @@ void loop() {
   xVAL = analogRead(A1);
   yVAL = analogRead(A2);
 
-  swMOD1.sunMOTORspeedOUT = map(xVAL,0,1023,128,240);
+  swMOD1.sunMOTORspeedOUT = map(xVAL,AIRAWMIN,AIRAWMAX,PWM_MIN,PWM_MAX);
 
   if (TimePulse == 1) {
     Serial.print(xVAL);
